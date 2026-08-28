@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#1F3A2E">
+<title>Attendance Check-In</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ledger-green:#1F3A2E;
+    --ledger-green-dark:#142722;
+    --paper:#F6F1E4;
+    --paper-line:#D8CDB0;
+    --ink-red:#A83A32;
+    --gold:#C79A3B;
+    --text-dark:#2B2822;
+    --text-muted:#6C6455;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(199,154,59,0.08), transparent 40%),
+      var(--ledger-green);
+    font-family:'Inter',sans-serif;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .card{
+    width:100%;
+    max-width:440px;
+    background:var(--paper);
+    border-radius:6px;
+    box-shadow:0 20px 60px rgba(0,0,0,0.35);
+    padding:32px 28px 28px;
+    position:relative;
+    overflow:hidden;
+  }
+  .card::before{
+    content:"";
+    position:absolute;
+    top:0;left:0;right:0;
+    height:8px;
+    background:repeating-linear-gradient(90deg,var(--ink-red) 0 14px, transparent 14px 24px);
+    opacity:0.8;
+  }
+  .eyebrow{
+    font-family:'Special Elite',monospace;
+    font-size:12px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:var(--ink-red);
+    margin:8px 0 4px;
+  }
+  h1{
+    font-family:'Special Elite',monospace;
+    font-size:26px;
+    color:var(--text-dark);
+    margin:0 0 4px;
+    line-height:1.2;
+  }
+  .sub{
+    font-size:13px;
+    color:var(--text-muted);
+    margin:0 0 24px;
+    border-bottom:1px dashed var(--paper-line);
+    padding-bottom:20px;
+  }
+  label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:var(--text-muted);
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    margin:16px 0 6px;
+  }
+  input, select{
+    width:100%;
+    padding:11px 12px;
+    border:1px solid var(--paper-line);
+    border-radius:4px;
+    background:#fffdf8;
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    color:var(--text-dark);
+  }
+  input:focus, select:focus{
+    outline:2px solid var(--gold);
+    outline-offset:1px;
+  }
+
+  .camera-box {
+    margin-top: 16px;
+    position: relative;
+    width: 100%;
+    background: #000;
+    border-radius: 4px;
+    overflow: hidden;
+    aspect-ratio: 4/3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--paper-line);
+  }
+  video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+  }
+  canvas {
+    display: none;
+  }
+
+  .tab-toggle{
+    display:flex;
+    gap:8px;
+    margin-top:20px;
+    padding:4px;
+    background:rgba(31,58,46,0.06);
+    border:1px solid var(--paper-line);
+    border-radius:6px;
+  }
+  .tab-btn{
+    flex:1;
+    padding:10px 8px;
+    border:none;
+    border-radius:4px;
+    background:transparent;
+    color:var(--text-muted);
+    font-family:'Special Elite',monospace;
+    font-size:13px;
+    letter-spacing:0.5px;
+    cursor:pointer;
+    transition:background 0.2s ease, color 0.2s ease;
+  }
+  .tab-btn.active{
+    background:var(--ledger-green);
+    color:var(--paper);
+  }
+  .tab-btn:not(.active):hover{
+    background:rgba(31,58,46,0.1);
+    color:var(--text-dark);
+  }
+  .tab-btn:disabled{
+    opacity:0.6;
+    cursor:not-allowed;
+  }
+
+  .geo-box{
+    margin-top:20px;
+    padding:14px;
+    border:1px dashed var(--paper-line);
+    border-radius:4px;
+    font-size:13px;
+    color:var(--text-muted);
+    background:rgba(199,154,59,0.06);
+  }
+  .geo-box.ready{ color:var(--ledger-green-dark); border-color:var(--ledger-green); background:rgba(31,58,46,0.06);}
+  .geo-box.err{ color:var(--ink-red); border-color:var(--ink-red); background:rgba(168,58,50,0.06);}
+  button{
+    width:100%;
+    margin-top:22px;
+    padding:14px;
+    border:none;
+    border-radius:4px;
+    background:var(--ledger-green);
+    color:var(--paper);
+    font-family:'Special Elite',monospace;
+    font-size:15px;
+    letter-spacing:1px;
+    cursor:pointer;
+    transition:transform 0.1s ease, background 0.2s ease;
+  }
+  button:hover:not(:disabled){ background:var(--ledger-green-dark); }
+  button:disabled{ opacity:0.5; cursor:not-allowed; }
+  button:active:not(:disabled){ transform:scale(0.98); }
+
+  .stamp{
+    display:none;
+    margin-top:22px;
+    padding:18px;
+    border:2px solid var(--ink-red);
+    border-radius:6px;
+    transform:rotate(-2deg);
+    text-align:center;
+    color:var(--ink-red);
+  }
+  .stamp.show{ display:block; animation:stampIn 0.35s ease; }
+  .stamp.flagged{ border-color:var(--gold); color:#8a6a10; }
+  @keyframes stampIn{
+    from{ opacity:0; transform:rotate(-2deg) scale(1.3); }
+    to{ opacity:1; transform:rotate(-2deg) scale(1); }
+  }
+  .stamp .big{
+    font-family:'Special Elite',monospace;
+    font-size:20px;
+    letter-spacing:2px;
+    text-transform:uppercase;
+  }
+  .stamp .small{
+    font-size:12px;
+    margin-top:6px;
+    color:var(--text-muted);
+  }
+  .error-msg{
+    display:none;
+    margin-top:14px;
+    font-size:13px;
+    color:var(--ink-red);
+  }
+  .error-msg.show{ display:block; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="eyebrow">Roll Call &middot; Location & Face Verified</div>
+  <h1 id="pageTitle">Attendance Check-In</h1>
+  <p class="sub" id="pageSub">Fill in your details, ensure your face is visible, then submit. Location & face photo will be logged.</p>
+
+  <div class="tab-toggle" role="tablist">
+    <button type="button" class="tab-btn active" data-mode="checkin" id="tabCheckin">Check In</button>
+    <button type="button" class="tab-btn" data-mode="checkout" id="tabCheckout">Check Out</button>
+  </div>
+
+  <form id="attendanceForm">
+    <label for="name">Full Name</label>
+    <input type="text" id="name" required placeholder="e.g. Asha Rao">
+
+    <label for="studentId">Student ID / Roll No.</label>
+    <input type="text" id="studentId" required placeholder="e.g. 24CS041">
+
+    <label for="semester">Semester</label>
+    <select id="semester" required>
+      <option value="" disabled selected>Select semester</option>
+      <option value="Semester 1">Semester 1</option>
+      <option value="Semester 2">Semester 2</option>
+      <option value="Semester 3">Semester 3</option>
+      <option value="Semester 4">Semester 4</option>
+      <option value="Semester 5">Semester 5</option>
+      <option value="Semester 6">Semester 6</option>
+          </select>
+
+    <label for="subject">Subject</label>
+    <!-- Edit SUBJECTS_BY_SEMESTER in the script below to match your syllabus -->
+    <select id="subject" required disabled>
+      <option value="" disabled selected>Select semester first</option>
+    </select>
+
+    <label>Face Photo</label>
+    <div class="camera-box">
+      <video id="webcam" autoplay playsinline webkit-playsinline muted></video>
+      <canvas id="photoCanvas"></canvas>
+    </div>
+
+    <div id="geoBox" class="geo-box">Requesting your location…</div>
+    <div id="errorMsg" class="error-msg"></div>
+
+    <button type="submit" id="submitBtn" disabled>Mark Attendance</button>
+  </form>
+
+  <div id="stamp" class="stamp">
+    <div class="big" id="stampBig">✓ Present</div>
+    <div class="small" id="stampDetail"></div>
+  </div>
+</div>
+
+<script>
+// ⚠️ PASTE_YOUR_DEPLOYMENT_URL_HERE — after you deploy Code.gs as a Web App
+// (see SETUP_INSTRUCTIONS.md), paste that /exec URL below.
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwicB_T9EXiw0jG4fav4o1N9uThyW1IfPRX36oE6IrMUhTBalE29YKw1Wfi3S-ZaAf4Rg/exec";
+
+// Your school/campus GPS coordinates (get these from Google Maps: right-click
+// the location -> the two numbers shown, e.g. 12.4245, 76.6961).
+const SCHOOL_LAT = 12.796283;
+const SCHOOL_LNG = 76.267426;
+const ALLOWED_RADIUS_METERS = 20;
+
+let coords = null;
+let cameraReady = false;
+let cameraStream = null; // Store reference to active stream
+let attendanceMode = 'checkin'; // 'checkin' or 'checkout'
+
+const webcam = document.getElementById('webcam');
+const canvas = document.getElementById('photoCanvas');
+const geoBox = document.getElementById('geoBox');
+const errorMsg = document.getElementById('errorMsg');
+const submitBtn = document.getElementById('submitBtn');
+const form = document.getElementById('attendanceForm');
+const stamp = document.getElementById('stamp');
+const stampDetail = document.getElementById('stampDetail');
+const pageTitle = document.getElementById('pageTitle');
+const pageSub = document.getElementById('pageSub');
+const tabCheckin = document.getElementById('tabCheckin');
+const tabCheckout = document.getElementById('tabCheckout');
+
+function setMode(mode){
+  attendanceMode = mode;
+  const isCheckin = mode === 'checkin';
+  tabCheckin.classList.toggle('active', isCheckin);
+  tabCheckout.classList.toggle('active', !isCheckin);
+  pageTitle.textContent = isCheckin ? "Attendance Check-In" : "Attendance Check-Out";
+  pageSub.textContent = isCheckin
+    ? "Fill in your details, ensure your face is visible, then submit. Location & face photo will be logged."
+    : "Confirm your details to log your check-out time for this subject/period.";
+  submitBtn.textContent = isCheckin ? "Mark Check-In" : "Mark Check-Out";
+}
+
+tabCheckin.addEventListener('click', () => setMode('checkin'));
+tabCheckout.addEventListener('click', () => setMode('checkout'));
+setMode('checkin');
+
+// ---- Semester -> Subject mapping ----
+// Edit this list to match your institution's actual syllabus per semester.
+const SUBJECTS_BY_SEMESTER = {
+   "Semester 1": ["Engineering Mathematics-I", "IT Skills", "Fundamentals of Electrical & Electronics Engineering.", "Digital Electronics-I", "Environmental Sustainability"],
+  "Semester 2": ["Engineering Mathematics-II", "Essential English Communication", "Computer Aided Engineering. Graphics", "Applied Electronics-1", "Indian Constitution"],
+  "Semester 3": ["Digital Electronics - II", "Communication systems", "Applied Electronics -II", "C - Programming", "Kannada –I"],
+  "Semester 4": ["Power Electronics", "Electronic Measurements and Analysis", "Microcontroller and Applications", "Verilog Programming for Digital Circuits", "Kannada –II"],
+  "Semester 5": ["Specialization Pathway-I", "Specialization Pathway-II", "Specialization Pathway-III", "Project Management and Entrepreneurship"],
+  "Semester 6": ["Internship", "Capstone Project"]
+};
+
+const semesterSelect = document.getElementById('semester');
+const subjectSelect = document.getElementById('subject');
+
+semesterSelect.addEventListener('change', () => {
+  const semester = semesterSelect.value;
+  const subjects = SUBJECTS_BY_SEMESTER[semester] || [];
+
+  subjectSelect.innerHTML = '<option value="" disabled selected>Select subject</option>';
+  subjects.forEach(sub => {
+    const opt = document.createElement('option');
+    opt.value = sub;
+    opt.textContent = sub;
+    subjectSelect.appendChild(opt);
+  });
+  subjectSelect.disabled = subjects.length === 0;
+});
+
+// 1. Initialize Camera
+async function initCamera() {
+  // Camera & location APIs only work on HTTPS (or localhost). Most Android
+  // browsers silently block them on plain http:// or file:// pages.
+  if (!window.isSecureContext) {
+    errorMsg.textContent = "This page must be opened over HTTPS for the camera and location to work on mobile. Ask whoever hosts this page to enable HTTPS.";
+    errorMsg.className = "error-msg show";
+    return;
+  }
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    errorMsg.textContent = "Camera isn't supported in this browser. On Android, please use Chrome and make sure it's up to date.";
+    errorMsg.className = "error-msg show";
+    return;
+  }
+
+  try {
+    // Prefer the front camera, but fall back to any available camera if
+    // the device/browser doesn't support facingMode constraints.
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "user" } },
+        audio: false
+      });
+    } catch (innerErr) {
+      cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: false
+      });
+    }
+
+    webcam.srcObject = cameraStream;
+    // Some Android/Chrome versions need an explicit play() call even with
+    // the autoplay attribute set.
+    try { await webcam.play(); } catch (playErr) { /* ignore, autoplay attr will usually kick in */ }
+
+    cameraReady = true;
+    checkReadyToSubmit();
+  } catch (err) {
+    if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+      errorMsg.textContent = "Camera permission was denied. Go to your browser's site settings and allow Camera access, then reload this page.";
+    } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+      errorMsg.textContent = "No camera was found on this device.";
+    } else if (err.name === "NotReadableError") {
+      errorMsg.textContent = "The camera is already in use by another app. Close other camera apps and reload.";
+    } else {
+      errorMsg.textContent = "Camera access denied or unavailable. Please grant camera permission.";
+    }
+    errorMsg.className = "error-msg show";
+  }
+}
+
+// 2. Stop Camera Streams
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop()); // Stop video hardware
+    webcam.srcObject = null;
+  }
+}
+
+function checkReadyToSubmit() {
+  if (coords && cameraReady) {
+    submitBtn.disabled = false;
+  }
+}
+
+// Always format the check-in time in India Standard Time (Asia/Kolkata),
+// regardless of the student's phone timezone setting, so attendance logs
+// stay consistent.
+function getISTTimestamp(){
+  const now = new Date();
+
+  // Human-readable IST string for display on the stamp, e.g. "14 Aug 2026, 3:42:10 pm"
+  const displayIST = now.toLocaleString('en-IN', {
+    timeZone: 'Asia/Kolkata',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true
+  });
+
+  // Machine-friendly IST string for the sheet, e.g. "2026-08-14 15:42:10 IST"
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false
+  }).formatToParts(now).reduce((acc, p) => { acc[p.type] = p.value; return acc; }, {});
+  const sheetIST = `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second} IST`;
+
+  return { displayIST, sheetIST };
+}
+
+function distanceMeters(lat1, lng1, lat2, lng2){
+  const R = 6371000;
+  const toRad = deg => deg * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat/2)**2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+            Math.sin(dLng/2)**2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
+function requestLocation(){
+  if (!window.isSecureContext) {
+    geoBox.textContent = "Location requires this page to be opened over HTTPS.";
+    geoBox.className = "geo-box err";
+    return;
+  }
+  if(!navigator.geolocation){
+    geoBox.textContent = "Geolocation isn't supported on this device/browser.";
+    geoBox.className = "geo-box err";
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const dist = Math.round(distanceMeters(lat, lng, SCHOOL_LAT, SCHOOL_LNG));
+      const withinRange = dist <= ALLOWED_RADIUS_METERS;
+
+      coords = {
+        lat: lat.toFixed(6),
+        lng: lng.toFixed(6),
+        accuracy: Math.round(pos.coords.accuracy),
+        distance: dist,
+        withinRange
+      };
+
+      if(withinRange){
+        geoBox.textContent = `Location captured — ${dist}m from school (±${coords.accuracy}m accuracy). Within range.`;
+        geoBox.className = "geo-box ready";
+      } else {
+        geoBox.textContent = `You're ${dist}m from school — outside the ${ALLOWED_RADIUS_METERS}m check-in radius. This will be flagged.`;
+        geoBox.className = "geo-box err";
+      }
+      checkReadyToSubmit();
+    },
+    err => {
+      if (err.code === err.PERMISSION_DENIED) {
+        geoBox.textContent = "Location permission was denied. Go to your browser's site settings and allow Location access, then reload this page.";
+      } else if (err.code === err.POSITION_UNAVAILABLE) {
+        geoBox.textContent = "Location unavailable. Make sure GPS/Location is turned on for your phone and try again.";
+      } else if (err.code === err.TIMEOUT) {
+        geoBox.textContent = "Getting your location took too long. Move to an open area (or near a window) and try again.";
+      } else {
+        geoBox.textContent = "Location access denied or unavailable. Please enable location permissions and reload this page.";
+      }
+      geoBox.className = "geo-box err";
+      submitBtn.disabled = true;
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+  );
+}
+
+initCamera();
+requestLocation();
+
+function captureFaceImage() {
+  canvas.width = webcam.videoWidth || 320;
+  canvas.height = webcam.videoHeight || 240;
+  const ctx = canvas.getContext('2d');
+  
+  ctx.translate(canvas.width, 0);
+  ctx.scale(-1, 1);
+  ctx.drawImage(webcam, 0, 0, canvas.width, canvas.height);
+  
+  return canvas.toDataURL('image/jpeg', 0.6); 
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if(!coords || !cameraReady){ return; }
+
+  const name = document.getElementById('name').value.trim();
+  const studentId = document.getElementById('studentId').value.trim();
+  const semester = document.getElementById('semester').value.trim();
+  const subject = document.getElementById('subject').value.trim();
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = "Submitting…";
+  tabCheckin.disabled = true;
+  tabCheckout.disabled = true;
+  errorMsg.className = "error-msg";
+
+  // Capture face photo from the still-live camera feed. We deliberately do
+  // NOT stop the camera here — only after a confirmed successful submission
+  // (see below). Stopping and immediately restarting it around every submit
+  // attempt caused some laptops to fail to reacquire the camera (OS takes a
+  // moment to release the device), leaving it stuck off.
+  const photoBase64 = captureFaceImage();
+
+  const { displayIST, sheetIST } = getISTTimestamp();
+
+  const payload = {
+    name, studentId, semester, subject,
+    type: attendanceMode, // "checkin" or "checkout"
+    lat: coords.lat, lng: coords.lng, accuracy: coords.accuracy,
+    distance: coords.distance, withinRange: coords.withinRange,
+    photoBase64: photoBase64,
+    timestamp: sheetIST // e.g. "2026-08-14 15:42:10 IST"
+  };
+
+  try{
+    if(SCRIPT_URL.includes("PASTE_YOUR")){
+      throw new Error("SCRIPT_URL not configured yet");
+    }
+
+    // NOTE: no "mode: no-cors" here — we need to read the response to know
+    // whether the student was found on the roster. Sending as text/plain
+    // (instead of application/json) avoids a CORS preflight request, which
+    // Apps Script web apps don't handle.
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify(payload)
+    });
+
+    const rawText = await res.text();
+    let result;
+    try {
+      result = JSON.parse(rawText);
+    } catch (parseErr) {
+      // The response wasn't JSON — usually means the Apps Script isn't
+      // deployed correctly (e.g. asking for sign-in, or deployment access
+      // isn't set to "Anyone", or SCRIPT_URL points at an old deployment).
+      console.error("Non-JSON response from SCRIPT_URL:", rawText.slice(0, 500));
+      throw new Error("BAD_RESPONSE: " + rawText.slice(0, 150));
+    }
+
+    function resetForRetry(){
+      submitBtn.disabled = false;
+      submitBtn.textContent = attendanceMode === 'checkin' ? "Mark Check-In" : "Mark Check-Out";
+      tabCheckin.disabled = false;
+      tabCheckout.disabled = false;
+      // Camera was never stopped for a retry, so no need to reacquire it.
+    }
+
+    if (result.status === "unauthorized") {
+      errorMsg.textContent = "Name and register number don't match our records. Please check spelling and try again.";
+      errorMsg.className = "error-msg show";
+      resetForRetry();
+      return;
+    }
+
+    if (result.status === "already_checked_in") {
+      errorMsg.textContent = `You're already checked in to ${subject} today. Check out first before checking in again.`;
+      errorMsg.className = "error-msg show";
+      resetForRetry();
+      return;
+    }
+
+    if (result.status === "no_checkin_found") {
+      errorMsg.textContent = `No check-in found for ${subject} today — check in first before checking out.`;
+      errorMsg.className = "error-msg show";
+      resetForRetry();
+      return;
+    }
+
+    if (result.status !== "success") {
+      throw new Error(result.message || "Server error");
+    }
+
+    form.style.display = "none";
+    document.querySelector('.tab-toggle').style.display = "none";
+    const flagNote = coords.withinRange ? "" : ` · ⚠ ${coords.distance}m outside school radius (flagged)`;
+    const actionLabel = attendanceMode === 'checkin' ? "Checked In" : "Checked Out";
+    const durationNote = (attendanceMode === 'checkout' && result.duration) ? ` · Duration: ${result.duration}` : "";
+    document.getElementById('stampBig').textContent = coords.withinRange ? `✓ ${actionLabel}` : "⚠ Flagged";
+    stampDetail.textContent = `${name} · ${semester} · ${subject} · ${displayIST} · ${coords.lat}, ${coords.lng}${flagNote}${durationNote}`;
+    stamp.className = "stamp show" + (coords.withinRange ? "" : " flagged");
+    // Only stop the camera now that the submission is fully confirmed.
+    stopCamera();
+  }catch(err){
+    console.error("Attendance submit error:", err);
+    if (err.message.includes("SCRIPT_URL")) {
+      errorMsg.textContent = "The form isn't connected to a Google Sheet yet — see setup instructions.";
+    } else if (err.message.includes("BAD_RESPONSE")) {
+      errorMsg.textContent = "The server didn't respond correctly. Check that the Apps Script is deployed as a Web app with access set to 'Anyone', and that SCRIPT_URL matches the latest deployment.";
+    } else if (err.name === "TypeError" && err.message.toLowerCase().includes("fetch")) {
+      errorMsg.textContent = "Couldn't reach the server — check your internet connection, or the Apps Script deployment may be misconfigured (CORS/permissions).";
+    } else {
+      errorMsg.textContent = "Couldn't submit: " + err.message;
+    }
+    errorMsg.className = "error-msg show";
+    submitBtn.disabled = false;
+    submitBtn.textContent = attendanceMode === 'checkin' ? "Mark Check-In" : "Mark Check-Out";
+    tabCheckin.disabled = false;
+    tabCheckout.disabled = false;
+    // Camera was never stopped, so it's still live for the student to retry.
+  }
+});
+</script>
+
+</body>
+</html>
